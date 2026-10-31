@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  job-tool-platform 项目专用 Maven 配置
+
+  由项目根目录的 ./mvnw 通过「-s .mvn/settings.xml」自动使用，
+  因此只作用于本项目，不会修改、也不依赖全局 Maven 配置。
+
+  作用：
+    1. 只声明开源公共仓库（阿里云公共镜像，聚合 Maven Central），
+       不引用任何私有仓库（如 mvn.ziroom.com），保证依赖全部是开源公共包；
+    2. 本地仓库路径由 ./mvnw 通过 -Dmaven.repo.local 传入，这里不再重复声明，
+       便于换机器时只改脚本一处。
+
+  如需完全直连官方源：删除 <mirrors> 中的 aliyun-public 即可，
+  下面的 profile 已把 Maven Central 声明为兜底仓库。
+  ============================================================
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <mirrors>
+    <mirror>
+      <id>aliyun-public</id>
+      <name>Aliyun Public Mirror (aggregates Maven Central)</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <profiles>
+    <profile>
+      <id>public-repositories</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <name>Maven Central</name>
+          <url>https://repo1.maven.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <name>Maven Central</name>
+          <url>https://repo1.maven.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>public-repositories</activeProfile>
+  </activeProfiles>
+
+</settings>

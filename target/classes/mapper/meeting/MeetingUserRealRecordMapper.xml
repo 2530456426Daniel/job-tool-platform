@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jobtool.platform.mapper.meeting.MeetingUserRealRecordMapper">
+
+    <!-- 共创会人员真实记录 结果映射 -->
+    <resultMap id="MeetingUserRealRecordResultMap" type="com.jobtool.platform.entity.meeting.MeetingUserRealRecord">
+        <id column="id" property="id"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="team_id" property="teamId"/>
+        <result column="team_name" property="teamName"/>
+        <result column="city_code" property="cityCode"/>
+        <result column="city_name" property="cityName"/>
+        <result column="dept_level_one" property="deptLevelOne"/>
+        <result column="dept_level_two" property="deptLevelTwo"/>
+        <result column="dept_level_three" property="deptLevelThree"/>
+        <result column="dept_level_four" property="deptLevelFour"/>
+        <result column="dept_level_five" property="deptLevelFive"/>
+        <result column="dept_level_six" property="deptLevelSix"/>
+        <result column="dept_level_seven" property="deptLevelSeven"/>
+        <result column="user_code" property="userCode"/>
+        <result column="user_name" property="userName"/>
+        <result column="join_flag" property="joinFlag"/>
+        <result column="join_time" property="joinTime"/>
+        <result column="join_late_flag" property="joinLateFlag"/>
+        <result column="watch_duration" property="watchDuration"/>
+        <result column="answer_flag" property="answerFlag"/>
+        <result column="answer_score_total" property="answerScoreTotal"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 战队汇总 结果映射（team_name 由 Service 回填，SQL 不再把参数当列返回） -->
+    <resultMap id="MeetingCollectionSummaryResultMap" type="com.jobtool.platform.dto.devtool.MeetingCollectionSummary">
+        <result column="total_count" property="totalCount"/>
+        <result column="avg_answer_score" property="avgAnswerScore"/>
+        <result column="avg_watch_duration" property="avgWatchDuration"/>
+        <result column="join_rate" property="joinRate"/>
+        <result column="answer_rate" property="answerRate"/>
+        <result column="answer_accuracy" property="answerAccuracy"/>
+        <result column="watch_rate" property="watchRate"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, activity_id, team_id, team_name, city_code, city_name,
+        dept_level_one, dept_level_two, dept_level_three, dept_level_four, dept_level_five, dept_level_six, dept_level_seven,
+        user_code, user_name, join_flag, join_time, join_late_flag, watch_duration, answer_flag, answer_score_total, create_time
+    </sql>
+
+    <!-- 按活动id查询参会记录；人员名单的过滤在 Service 层完成 -->
+    <select id="selectByActivityId" resultMap="MeetingUserRealRecordResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from meeting_user_real_record
+        where activity_id = #{activityId}
+        order by id asc
+    </select>
+
+    <!--
+      战队汇总：只有 activity_id + team_name 两个条件，不施加人员名单过滤
+      （因此「总人数」是整个战队的人数）。watch_duration 先按参会时长封顶。
+    -->
+    <select id="selectTeamSummary" resultMap="MeetingCollectionSummaryResultMap">
+        select
+            count(*) as total_count,
+            round(avg(ifnull(answer_score_total, 0)), 1) as avg_answer_score,
+            round(avg(least(ifnull(watch_duration, 0), #{attendanceDuration})), 1) as avg_watch_duration,
+            round(avg(ifnull(join_flag, 0)) * 100.0, 1) as join_rate,
+            round(avg(ifnull(answer_flag, 0)) * 100.0, 1) as answer_rate,
+            round(avg(ifnull(answer_score_total, 0)) * 100.0 / #{answerScore}, 1) as answer_accuracy,
+            round(avg(least(ifnull(watch_duration, 0), #{attendanceDuration})) * 100.0 / #{attendanceDuration}, 1) as watch_rate
+        from meeting_user_real_record
+        where activity_id = #{activityId}
+        and team_name = #{teamName}
+    </select>
+
+    <!-- 导入前按 活动ID + 战队ID 清空原有数据；team_id 传空时匹配不到任何行，不会误删整个活动 -->
+    <delete id="deleteByActivityIdAndTeamId">
+        delete from meeting_user_real_record
+        where activity_id = #{activityId}
+        and team_id = #{teamId}
+    </delete>
+
+    <!-- 批量插入：id 由数据库自增（不在列清单里），按列表顺序顺序插入 -->
+    <insert id="batchInsert">
+        insert into meeting_user_real_record
+        (
+        activity_id, team_id, team_name, city_code, city_name,
+        dept_level_one, dept_level_two, dept_level_three, dept_level_four, dept_level_five, dept_level_six, dept_level_seven,
+        user_code, user_name, join_flag, join_time, join_late_flag, watch_duration, answer_flag, answer_score_total, create_time
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.activityId}, #{item.teamId}, #{item.teamName}, #{item.cityCode}, #{item.cityName},
+            #{item.deptLevelOne}, #{item.deptLevelTwo}, #{item.deptLevelThree}, #{item.deptLevelFour},
+            #{item.deptLevelFive}, #{item.deptLevelSix}, #{item.deptLevelSeven},
+            #{item.userCode}, #{item.userName}, #{item.joinFlag}, #{item.joinTime}, #{item.joinLateFlag},
+            #{item.watchDuration}, #{item.answerFlag}, #{item.answerScoreTotal}, #{item.createTime}
+            )
+        </foreach>
+    </insert>
+
+</mapper>

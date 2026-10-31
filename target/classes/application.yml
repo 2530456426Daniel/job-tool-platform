@@ -1,0 +1,74 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: job-tool-platform
+
+  # 初始化阶段使用内存数据库，应用重启即重置，方便本地开发。
+  # 后续切换正式库时，替换 datasource 配置并移除 h2 依赖即可。
+  datasource:
+    url: jdbc:h2:mem:jobtool;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  # 建表/初始化数据：在此目录新增 schema.sql、data.sql 即可自动执行
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # Excel 上传：OKR 达成情况与共创会导入文件可能较大，放宽默认 1MB 限制
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  jackson:
+    default-property-inclusion: non_null
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+mybatis:
+  # Mapper XML 位置（复杂 SQL 建议写在 XML 中，简单查询可用注解）
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.jobtool.platform.entity
+  configuration:
+    # 数据库下划线字段自动映射到 Java 驼峰属性
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+
+# 接口文档：http://localhost:8081/api/swagger-ui.html
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: info
+    com.jobtool.platform: debug
